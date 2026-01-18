@@ -5,16 +5,22 @@ const navLinks = document.querySelectorAll('.nav-link');
 const skillBars = document.querySelectorAll('.skill-bar');
 
 // Mobile Navigation Toggle
-hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    navMenu.classList.toggle('active');
-});
+const navMenuContainer = document.querySelector('.nav-menu-container');
+
+if (hamburger && navMenuContainer) {
+    hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        navMenuContainer.classList.toggle('active');
+    });
+}
 
 // Close mobile menu when clicking on a link
 navLinks.forEach(link => {
     link.addEventListener('click', () => {
-        hamburger.classList.remove('active');
-        navMenu.classList.remove('active');
+        if (hamburger && navMenuContainer) {
+            hamburger.classList.remove('active');
+            navMenuContainer.classList.remove('active');
+        }
     });
 });
 
@@ -35,19 +41,67 @@ navLinks.forEach(link => {
     });
 });
 
-// Navbar background change on scroll
-window.addEventListener('scroll', () => {
-    const navbar = document.querySelector('.navbar');
-    if (window.scrollY > 100) {
-        navbar.style.background = 'rgba(255, 255, 255, 0.2)';
-        navbar.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.15)';
-        navbar.style.borderBottom = '1px solid rgba(255, 255, 255, 0.3)';
-    } else {
-        navbar.style.background = 'rgba(255, 255, 255, 0.1)';
-        navbar.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
-        navbar.style.borderBottom = '1px solid rgba(255, 255, 255, 0.2)';
+// Theme Management
+const getTheme = () => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+};
+
+const setTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    const icon = document.querySelector('#theme-toggle i');
+    if (icon) {
+        if (theme === 'dark') {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
     }
-});
+};
+
+// Initialize theme on page load
+const initTheme = () => {
+    const currentTheme = getTheme();
+    setTheme(currentTheme);
+};
+
+// Theme toggle functionality
+const themeToggle = document.getElementById('theme-toggle');
+if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        updateNavbarOnScroll(); // Update navbar after theme change
+    });
+}
+
+// Navbar background change on scroll
+const updateNavbarOnScroll = () => {
+    const navbar = document.querySelector('.navbar');
+    if (!navbar) return;
+    
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const scrollY = window.scrollY;
+    
+    if (scrollY > 100) {
+        navbar.style.background = currentTheme === 'dark' 
+            ? 'rgba(15, 23, 42, 0.95)' 
+            : 'rgba(255, 255, 255, 0.95)';
+        navbar.style.boxShadow = 'var(--shadow-md)';
+    } else {
+        navbar.style.background = currentTheme === 'dark' 
+            ? 'rgba(15, 23, 42, 0.8)' 
+            : 'rgba(255, 255, 255, 0.1)';
+        navbar.style.boxShadow = 'var(--shadow-sm)';
+    }
+};
+
+window.addEventListener('scroll', updateNavbarOnScroll);
 
 // Intersection Observer for animations
 const observerOptions = {
@@ -100,18 +154,38 @@ function typeWriter(element, speed = 100) {
             setTimeout(type, speed);
         } else {
             // Animation complete, keep final text with blinking cursor
-            element.innerHTML = 'Hi, I\'m <span class="highlight">Gagan<span class="typing-cursor">|</span></span>';
+            element.innerHTML = 'Hi, I\'m <span class="highlight">Gagan</span><span class="typing-cursor">|</span>';
         }
     }
     
     type();
 }
 
-// Initialize typing animation when page loads
-window.addEventListener('load', () => {
+// Initialize typing animation when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
     const heroTitle = document.querySelector('.hero-title');
     if (heroTitle) {
-        typeWriter(heroTitle, 50);
+        // Always run the typing animation (will replace the static content)
+        typeWriter(heroTitle, 80);
+    }
+});
+
+// Fallback: Ensure cursor is always present
+document.addEventListener('DOMContentLoaded', () => {
+    const heroTitle = document.querySelector('.hero-title');
+    if (heroTitle) {
+        const cursor = heroTitle.querySelector('.typing-cursor');
+        if (!cursor) {
+            // If no cursor found after a delay, add it
+            setTimeout(() => {
+                if (!heroTitle.querySelector('.typing-cursor')) {
+                    const nameSpan = heroTitle.querySelector('.highlight');
+                    if (nameSpan) {
+                        nameSpan.insertAdjacentHTML('afterend', '<span class="typing-cursor">|</span>');
+                    }
+                }
+            }, 2000);
+        }
     }
 });
 
@@ -333,5 +407,14 @@ Feel free to customize and enhance!
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     console.log('Portfolio website initialized!');
+});
+
+// Listen for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    // Only auto-switch if user hasn't manually set a preference
+    if (!localStorage.getItem('theme')) {
+        setTheme(e.matches ? 'dark' : 'light');
+    }
 });
